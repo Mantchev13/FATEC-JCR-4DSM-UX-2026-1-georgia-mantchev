@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fluxo de Usuário – Carlos | App de Saúde</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4fa;
+      padding: 32px 20px 48px;
+      color: #1e2a3a;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      color: #2E5FA3;
+      margin-bottom: 6px;
+    }
+    header p {
+      font-size: 0.9rem;
+      color: #5a6a80;
+    }
+    .tag {
+      display: inline-block;
+      background: #e8f0fe;
+      color: #2E5FA3;
+      border-radius: 20px;
+      padding: 3px 14px;
+      font-size: 0.8rem;
+      margin: 4px 2px;
+      font-weight: 600;
+    }
+
+    /* ─── LAYOUT PRINCIPAL ─── */
+    .layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ─── NÓS ─── */
+    .node {
+      background: #ffffff;
+      border: 2px solid #4472C4;
+      border-radius: 10px;
+      padding: 14px 24px;
+      min-width: 280px;
+      max-width: 340px;
+      text-align: center;
+      position: relative;
+    }
+    .node .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #4472C4;
+      margin-bottom: 4px;
+    }
+    .node .title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e2a3a;
+      margin-bottom: 3px;
+    }
+    .node .sub {
+      font-size: 0.78rem;
+      color: #5a6a80;
+    }
+    .node.start { border-color: #2E5FA3; background: #2E5FA3; }
+    .node.start .title, .node.start .sub { color: #fff; }
+    .node.end { border-color: #1a7a4a; background: #1a7a4a; }
+    .node.end .title, .node.end .sub { color: #fff; }
+    .node.decision {
+      border-color: #e07b00;
+      background: #fff8ee;
+      transform: rotate(0);
+    }
+    .node.decision .label { color: #e07b00; }
+    .node.emergency { border-color: #c0392b; background: #fff0ee; }
+    .node.emergency .label { color: #c0392b; }
+
+    /* Sentimento badge */
+    .sentiment {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.72rem;
+      background: #eef2fb;
+      color: #2E5FA3;
+      border-radius: 12px;
+      padding: 2px 10px;
+    }
+    .node.start .sentiment, .node.end .sentiment {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    /* ─── SETAS ─── */
+    .arrow {
+      width: 2px;
+      background: #4472C4;
+      height: 30px;
+      position: relative;
+    }
+    .arrow::after {
+      content: "▼";
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #4472C4;
+      font-size: 14px;
+    }
+    .arrow.orange { background: #e07b00; }
+    .arrow.orange::after { color: #e07b00; }
+
+    /* ─── BLOCO DE DECISÃO ─── */
+    .decision-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .branches {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 0;
+      padding-top: 0;
+      width: 100%;
+    }
+    .branch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 340px;
+    }
+    .branch-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #e07b00;
+      background: #fff8ee;
+      border: 1.5px solid #e07b00;
+      border-radius: 20px;
+      padding: 2px 12px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .branch-label.green {
+      color: #1a7a4a;
+      background: #edfaf3;
+      border-color: #1a7a4a;
+    }
+
+    /* ─── LINHA HORIZONTAL DE BIFURCAÇÃO ─── */
+    .fork-line {
+      width: 60%;
+      height: 2px;
+      background: #e07b00;
+      margin: 0 auto;
+      position: relative;
+    }
+    .fork-line::before,
+    .fork-line::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 2px;
+      height: 20px;
+      background: #e07b00;
+    }
+    .fork-line::before { left: 0; }
+    .fork-line::after { right: 0; }
+
+    /* Segundo bloco de decisão */
+    .decision2-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-top: 0;
+    }
+
+    /* ─── SEÇÃO TÍTULO ─── */
+    .section-title {
+      width: 100%;
+      max-width: 780px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #2E5FA3;
+      border-left: 4px solid #4472C4;
+      padding-left: 10px;
+      margin: 36px 0 16px;
+    }
+
+    /* ─── LEGENDA ─── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.8rem;
+      color: #3a4a5a;
+    }
+    .legend-box {
+      width: 18px; height: 18px;
+      border-radius: 4px;
+    }
+
+    /* ─── MAPA DE JORNADA ─── */
+    .journey-map {
+      width: 100%;
+      max-width: 780px;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+    .journey-phases {
+      display: flex;
+      gap: 0;
+      border: 2px solid #4472C4;
+      border-radius: 10px;
+      overflow: hidden;
+      min-width: 600px;
+    }
+    .journey-phase {
+      flex: 1;
+      padding: 12px 10px;
+      border-right: 1px solid #c9d8f0;
+      text-align: center;
+    }
+    .journey-phase:last-child { border-right: none; }
+    .journey-phase .phase-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #2E5FA3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .journey-phase .phase-emoji { font-size: 1.2rem; margin-bottom: 4px; }
+    .journey-phase .phase-desc { font-size: 0.7rem; color: #5a6a80; line-height: 1.4; }
+    .journey-phase .phase-connect {
+      margin-top: 8px;
+      font-size: 0.68rem;
+      background: #e8f0fe;
+      color: #2E5FA3;
+      border-radius: 8px;
+      padding: 3px 6px;
+      font-weight: 600;
+    }
+    .journey-phase.highlight { background: #e8f0fe; }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.75rem;
+      color: #8a9ab0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏥 Fluxo de Usuário – App de Saúde</h1>
+  <p>Experiência do Usuário · DSM · FATEC Jacareí · Prof.ª Lucineide · 1º Semestre/2026</p>
+  <div style="margin-top:10px;">
+    <span class="tag">Exercício 1 – Fluxo Simples</span>
+    <span class="tag">Exercício 2 – Com Decisão</span>
+    <span class="tag">Exercício 3 – Mapa de Jornada</span>
+  </div>
+</header>
+
+<!-- LEGENDA -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-box" style="background:#2E5FA3;"></div> Início / Fim</div>
+  <div class="legend-item"><div class="legend-box" style="background:#4472C4; border:2px solid #4472C4;"></div> Etapa do fluxo</div>
+  <div class="legend-item"><div class="legend-box" style="background:#fff8ee; border:2px solid #e07b00;"></div> Decisão</div>
+  <div class="legend-item"><div class="legend-box" style="background:#fff0ee; border:2px solid #c0392b;"></div> Urgência / Emergência</div>
+  <div class="legend-item"><div class="legend-box" style="background:#edfaf3; border:2px solid #1a7a4a;"></div> Caminho alternativo (ok)</div>
+</div>
+
+<!-- ══════════════ EXERCÍCIO 1 + 2 ══════════════ -->
+<div class="section-title">Exercício 1 &amp; 2 — Fluxo de Usuário com Decisões</div>
+
+<div class="layout">
+
+  <!-- INÍCIO -->
+  <div class="node start">
+    <div class="label">Início</div>
+    <div class="title">Carlos abre o app</div>
+    <div class="sub">Sente desconforto no peito e busca orientação</div>
+    <div class="sentiment">😟 Ansioso, busca segurança</div>
+  </div>
+  <div class="arrow"></div>
+
+  <!-- ETAPA 1 -->
+  <div class="node">
+    <div class="label">Etapa 1</div>
+    <div class="title">Seleciona "Registrar Sintoma"</div>
+    <div class="sub">Preenche formulário com os sintomas sentidos</div>
+    <div class="sentiment">🙂 Engajado, sente-se ouvido</div>
+  </div>
+  <div class="arrow"></div>
+
+  <!-- ETAPA 2 -->
+  <div class="node">
+    <div class="label">Etapa 2</div>
+    <div class="title">Confirma e envia o registro</div>
+    <div class="sub">App processa e realiza triagem inicial automática</div>
+    <div class="sentiment">😌 Aliviado por ter resposta rápida</div>
+  </div>
+  <div class="arrow orange"></div>
+
+  <!-- DECISÃO 1: URGÊNCIA -->
+  <div class="decision-block">
+    <div class="node decision">
+      <div class="label">⚠️ Decisão — Nível de Urgência</div>
+      <div class="title">App analisa os sintomas</div>
+      <div class="sub">Qual é o nível de risco identificado?</div>
+    </div>
+
+    <div style="height:16px; width:2px; background:#e07b00; margin:0 auto;"></div>
+    <div class="fork-line"></div>
+
+    <div class="branches">
+      <!-- CAMINHO A: Alta urgência -->
+      <div class="branch">
+        <div style="height:16px; width:2px; background:#e07b00; margin:0 auto;"></div>
+        <div class="branch-label">Alta Urgência</div>
+        <div class="node emergency">
+          <div class="label">🚨 Caminho A</div>
+          <div class="title">Exibe botão SAMU (192)</div>
+          <div class="sub">Destaque vermelho com animação de pulsação</div>
+          <div class="sentiment">😰 Assustado, precisa de ação imediata</div>
+        </div>
+        <div class="arrow" style="background:#c0392b;"></div>
+        <div class="node" style="border-color:#c0392b;">
+          <div class="label" style="color:#c0392b;">Resultado A</div>
+          <div class="title">Liga para o SAMU</div>
+          <div class="sub">App mantém tela ativa com instruções de primeiros socorros</div>
+        </div>
+      </div>
+
+      <!-- CAMINHO B: Baixa urgência -->
+      <div class="branch">
+        <div style="height:16px; width:2px; background:#e07b00; margin:0 auto;"></div>
+        <div class="branch-label green">Baixa Urgência</div>
+        <div class="node">
+          <div class="label">✅ Caminho B</div>
+          <div class="title">Etapa 3 – Lê as orientações</div>
+          <div class="sub">Instruções de cuidados e indicação de procurar UBS</div>
+          <div class="sentiment">😊 Tranquilo, tem um caminho a seguir</div>
+        </div>
+        <div class="arrow" style="background:#1a7a4a; "></div>
+
+        <!-- DECISÃO 2: GPS -->
+        <div class="decision2-block">
+          <div class="node decision">
+            <div class="label">⚠️ Decisão — GPS</div>
+            <div class="title">Carlos permite o acesso à localização?</div>
+          </div>
+
+          <div style="height:14px; width:2px; background:#e07b00; margin:0 auto;"></div>
+          <div class="fork-line" style="width:80%;"></div>
+
+          <div class="branches" style="gap:24px;">
+            <div class="branch">
+              <div style="height:14px; width:2px; background:#e07b00; margin:0 auto;"></div>
+              <div class="branch-label green">Aceita GPS</div>
+              <div class="node" style="border-color:#1a7a4a; min-width:200px;">
+                <div class="label" style="color:#1a7a4a;">Localização automática</div>
+                <div class="title">Mapa com UBSs/UPAs próximas</div>
+                <div class="sub">Tempo estimado de deslocamento</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div style="height:14px; width:2px; background:#e07b00; margin:0 auto;"></div>
+              <div class="branch-label">Recusa GPS</div>
+              <div class="node" style="min-width:200px;">
+                <div class="label">Busca manual</div>
+                <div class="title">Carlos digita o CEP</div>
+                <div class="sub">App exibe unidades próximas ao CEP</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIM (abaixo do caminho B apenas para fluxo visual) -->
+  <div style="height:28px; width:2px; background:#1a7a4a; margin:0 auto; margin-top:12px;"></div>
+  <div class="node end" style="max-width:340px;">
+    <div class="label">Fim</div>
+    <div class="title">Carlos se dirige à unidade de saúde</div>
+    <div class="sub">Compartilha localização com familiar se desejar</div>
+    <div class="sentiment">💚 Confiante e amparado</div>
+  </div>
+
+</div>
+
+<!-- ══════════════ EXERCÍCIO 3 ══════════════ -->
+<div class="section-title">Exercício 3 — Conexão com o Mapa de Jornada</div>
+
+<div class="journey-map">
+  <div class="journey-phases">
+
+    <div class="journey-phase highlight">
+      <div class="phase-emoji">😟</div>
+      <div class="phase-title">Descoberta</div>
+      <div class="phase-desc">Carlos percebe o sintoma e lembra do app de saúde</div>
+      <div class="phase-connect">🔗 Início do fluxo</div>
+    </div>
+
+    <div class="journey-phase">
+      <div class="phase-emoji">📝</div>
+      <div class="phase-title">Engajamento</div>
+      <div class="phase-desc">Registra os sintomas e interage pela primeira vez com o sistema</div>
+      <div class="phase-connect">🔗 Etapa 1</div>
+    </div>
+
+    <div class="journey-phase highlight">
+      <div class="phase-emoji">⚡</div>
+      <div class="phase-title">Consideração</div>
+      <div class="phase-desc">Ponto crítico emocional: triagem e decisão de urgência</div>
+      <div class="phase-connect">🔗 Etapa 2 + Decisão Urgência</div>
+    </div>
+
+    <div class="journey-phase">
+      <div class="phase-emoji">🗺️</div>
+      <div class="phase-title">Resolução</div>
+      <div class="phase-desc">Recebe orientações e localiza unidade de saúde próxima</div>
+      <div class="phase-connect">🔗 Etapa 3 + Decisão GPS + Fim</div>
+    </div>
+
+    <div class="journey-phase highlight">
+      <div class="phase-emoji">💚</div>
+      <div class="phase-title">Fidelização</div>
+      <div class="phase-desc">Experiência positiva gera confiança e uso recorrente do app</div>
+      <div class="phase-connect">🔗 Fim do fluxo</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:14px; background:#fff; border:1px solid #c9d8f0; border-radius:8px; padding:14px 18px;">
+    <strong style="color:#2E5FA3; font-size:0.85rem;">📌 Como os dois se conectam:</strong>
+    <ul style="margin-top:8px; padding-left:20px; font-size:0.8rem; color:#3a4a5a; line-height:1.9;">
+      <li>O <strong>fluxo de usuário</strong> detalha as ações e telas; o <strong>mapa de jornada</strong> revela o estado emocional em cada passo.</li>
+      <li>O pico de emoção negativa do mapa (fase <em>Consideração</em>) coincide com a <strong>decisão de urgência</strong> do fluxo — o momento mais crítico do design.</li>
+      <li>Quando o fluxo mapeia o caminho alternativo (GPS recusado), isso corresponde à fase de <em>Resolução</em> com maior fricção no mapa.</li>
+      <li>O <strong>sentimento esperado</strong> em cada etapa do fluxo alimenta diretamente a curva emocional do mapa de jornada.</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  Experiência do Usuário · DSM · FATEC Jacareí · Prof.ª Lucineide · 2026
+</footer>
+
+</body>
+</html>
