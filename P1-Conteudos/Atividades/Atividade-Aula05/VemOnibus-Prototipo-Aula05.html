@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VemÔnibus – Protótipo Interativo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Roboto', 'Segoe UI', sans-serif;
+    background: #1A3A5C;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    color: #fff;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
+  .page-header p  { font-size: 12px; opacity: .7; margin-top: 4px; }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .bc-btn {
+    background: rgba(255,255,255,.12);
+    color: #fff; border: 1.5px solid rgba(255,255,255,.25);
+    border-radius: 20px; padding: 5px 14px; font-size: 12px;
+    cursor: pointer; transition: all .2s;
+  }
+  .bc-btn.active, .bc-btn:hover {
+    background: #fff; color: #1A3A5C; border-color: #fff; font-weight: 700;
+  }
+
+  /* ── Phone shell ── */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .phone {
+    width: 360px;
+    height: 680px;
+    background: #fff;
+    border-radius: 36px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 8px #0d2440;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── Status bar ── */
+  .status-bar {
+    background: #1A3A5C;
+    color: #fff; font-size: 11px;
+    padding: 6px 18px;
+    display: flex; justify-content: space-between;
+    align-items: center; flex-shrink: 0;
+  }
+
+  /* ── App bar ── */
+  .app-bar {
+    background: #2E6DA4;
+    color: #fff;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .app-bar .back-btn {
+    font-size: 18px; cursor: pointer; opacity: .9;
+    background: none; border: none; color: #fff;
+    display: none;
+  }
+  .app-bar h2 { font-size: 16px; font-weight: 700; flex: 1; }
+  .app-bar .fav-btn {
+    font-size: 18px; cursor: pointer;
+    background: none; border: none; color: #fff;
+  }
+
+  /* ── Scroll area ── */
+  .screen-body {
+    flex: 1; overflow-y: auto; padding: 14px 14px 80px;
+    background: #F4F6F9;
+  }
+  .screen-body::-webkit-scrollbar { width: 4px; }
+  .screen-body::-webkit-scrollbar-thumb { background: #AED6F1; border-radius: 4px; }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    display: flex; flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1; padding: 8px 4px; text-align: center;
+    cursor: pointer; font-size: 10px; color: #999;
+    transition: color .15s;
+  }
+  .nav-item .nav-icon { font-size: 20px; display: block; }
+  .nav-item.active { color: #2E6DA4; font-weight: 700; }
+
+  /* ── Components ── */
+  .search-box {
+    background: #fff;
+    border: 2px solid #2E6DA4;
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(46,109,164,.12);
+    transition: box-shadow .2s;
+  }
+  .search-box:hover { box-shadow: 0 4px 16px rgba(46,109,164,.22); }
+  .search-box input {
+    border: none; outline: none; font-size: 14px;
+    color: #555; width: 100%; background: none; cursor: pointer;
+  }
+  .search-box .icon { color: #2E6DA4; font-size: 18px; }
+  .search-box .clear-btn {
+    font-size: 14px; color: #999; cursor: pointer;
+    display: none; background: none; border: none;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 700; color: #888;
+    text-transform: uppercase; letter-spacing: .8px;
+    margin: 14px 0 6px;
+  }
+
+  .line-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    cursor: pointer; transition: all .18s;
+    border-left: 4px solid #2E6DA4;
+  }
+  .line-card:hover { transform: translateX(3px); box-shadow: 0 3px 10px rgba(46,109,164,.18); }
+  .line-num {
+    background: #2E6DA4; color: #fff;
+    border-radius: 8px; padding: 6px 10px;
+    font-size: 14px; font-weight: 700; min-width: 48px; text-align: center;
+  }
+  .line-info { flex: 1; }
+  .line-name { font-size: 14px; font-weight: 700; color: #1A3A5C; }
+  .line-sub  { font-size: 11px; color: #888; margin-top: 2px; }
+  .line-card .fav-star {
+    font-size: 18px; color: #f0c040; cursor: pointer;
+    transition: transform .15s;
+  }
+  .line-card .fav-star:hover { transform: scale(1.25); }
+
+  .next-badge {
+    background: linear-gradient(135deg, #1E8449, #27AE60);
+    color: #fff; border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 14px;
+    box-shadow: 0 3px 12px rgba(30,132,73,.3);
+  }
+  .next-badge .nb-label { font-size: 11px; opacity: .85; }
+  .next-badge .nb-time  { font-size: 28px; font-weight: 900; margin: 2px 0; }
+  .next-badge .nb-min   { font-size: 13px; opacity: .9; }
+
+  .day-tabs {
+    display: flex; background: #fff; border-radius: 10px;
+    overflow: hidden; margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  .day-tab {
+    flex: 1; padding: 9px 4px; text-align: center;
+    font-size: 12px; cursor: pointer; color: #888;
+    border-bottom: 3px solid transparent; transition: all .15s;
+    font-weight: 600;
+  }
+  .day-tab.active { color: #2E6DA4; border-bottom-color: #2E6DA4; background: #EBF5FB; }
+
+  .time-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+  }
+  .time-chip {
+    background: #fff; border: 1.5px solid #AED6F1;
+    border-radius: 8px; padding: 7px 12px;
+    font-size: 13px; font-weight: 600; color: #1A3A5C;
+    cursor: pointer; transition: all .15s;
+  }
+  .time-chip:hover, .time-chip.next-chip {
+    background: #2E6DA4; color: #fff; border-color: #2E6DA4;
+  }
+
+  .update-note {
+    font-size: 11px; color: #aaa; text-align: center;
+    margin-top: 8px; padding: 8px;
+    background: #fff; border-radius: 8px;
+  }
+
+  .stop-list { }
+  .stop-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; position: relative;
+  }
+  .stop-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #AED6F1; border: 2px solid #2E6DA4;
+    flex-shrink: 0; position: relative; z-index: 1;
+  }
+  .stop-dot.terminal { background: #2E6DA4; width: 18px; height: 18px; }
+  .stop-line-v {
+    position: absolute; left: 6px; top: 24px;
+    width: 2px; height: calc(100% - 10px);
+    background: #AED6F1; z-index: 0;
+  }
+  .stop-name { font-size: 14px; color: #2C3E50; font-weight: 500; }
+  .stop-name.terminal { font-weight: 700; color: #1A3A5C; font-size: 15px; }
+  .direction-badge {
+    background: #EBF5FB; border: 1px solid #AED6F1;
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; color: #2E6DA4; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 12px; cursor: pointer;
+  }
+
+  .search-input-real {
+    background: #fff; border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  }
+  .search-input-real input {
+    border: none; outline: none; font-size: 14px;
+    color: #333; width: 100%; background: none;
+  }
+  .search-input-real .clear { font-size: 16px; color: #ccc; cursor: pointer; }
+
+  .result-card {
+    background: #fff; border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 8px; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    border-left: 4px solid #2E6DA4; transition: all .15s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .result-card:hover { transform: translateX(3px); }
+
+  .empty-search {
+    text-align: center; color: #bbb; padding: 40px 20px;
+    font-size: 14px;
+  }
+  .empty-search span { font-size: 40px; display: block; margin-bottom: 12px; }
+
+  .fav-empty {
+    text-align: center; color: #bbb; padding: 30px 20px; font-size: 13px;
+  }
+  .fav-empty span { font-size: 36px; display: block; margin-bottom: 10px; }
+
+  /* ── Screens ── */
+  .screen { display: none; height: 100%; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── Transition ── */
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes slideBack {
+    from { transform: translateX(-30%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  .slide-in   { animation: slideIn  .25s ease; }
+  .slide-back { animation: slideBack .22s ease; }
+
+  /* ── Below phone info ── */
+  .proto-info {
+    margin-top: 18px; text-align: center; color: rgba(255,255,255,.55);
+    font-size: 11px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🚌 VemÔnibus</h1>
+  <p>Protótipo Interativo — UX Aula 05 · HallwayTech · FATEC Jacareí 2026/1</p>
+</div>
+
+<div class="breadcrumb" id="breadcrumb">
+  <button class="bc-btn active" onclick="goTo('home',false)">🏠 Home</button>
+  <button class="bc-btn" onclick="goTo('search',true)">🔍 Busca</button>
+  <button class="bc-btn" onclick="goTo('schedule',true)">📋 Horários</button>
+  <button class="bc-btn" onclick="goTo('itinerary',true)">📍 Itinerário</button>
+  <button class="bc-btn" onclick="goTo('favorites',false)">⭐ Favoritos</button>
+</div>
+
+<div class="phone-wrap">
+<div class="phone">
+
+  <!-- ══ SCREEN: HOME ══ -->
+  <div class="screen active" id="screen-home">
+    <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+    <div class="app-bar">
+      <h2>🚌 VemÔnibus</h2>
+    </div>
+    <div class="screen-body">
+      <div class="search-box" onclick="goTo('search',true)">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="Buscar linha..." readonly>
+      </div>
+
+      <div class="section-label">⭐ Favoritos</div>
+      <div id="home-favs"></div>
+
+      <div class="section-label">🕐 Recentes</div>
+      <div class="line-card" onclick="selectLine('101','Centro','Terminal Jacareí → Centro')">
+        <div class="line-num">101</div>
+        <div class="line-info">
+          <div class="line-name">Centro</div>
+          <div class="line-sub">Terminal Jacareí → Centro</div>
+        </div>
+        <span class="fav-star" onclick="toggleFav(event,'101','Centro','Terminal Jacareí → Centro')">☆</span>
+      </div>
+      <div class="line-card" onclick="selectLine('203','Terminal Sul','Bairro → Terminal Sul')">
+        <div class="line-num">203</div>
+        <div class="line-info">
+          <div class="line-name">Terminal Sul</div>
+          <div class="line-sub">Bairro → Terminal Sul</div>
+        </div>
+        <span class="fav-star" onclick="toggleFav(event,'203','Terminal Sul','Bairro → Terminal Sul')">☆</span>
+      </div>
+      <div class="line-card" onclick="selectLine('055','Jardim das Nações','Centro → Jardim das Nações')">
+        <div class="line-num">055</div>
+        <div class="line-info">
+          <div class="line-name">Jardim das Nações</div>
+          <div class="line-sub">Centro → Jardim das Nações</div>
+        </div>
+        <span class="fav-star" onclick="toggleFav(event,'055','Jardim das Nações','Centro → Jardim das Nações')">☆</span>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><span class="nav-icon">🏠</span>Home</div>
+      <div class="nav-item" onclick="goTo('search',true)"><span class="nav-icon">🔍</span>Busca</div>
+      <div class="nav-item" onclick="goTo('favorites',false)"><span class="nav-icon">⭐</span>Favoritos</div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: SEARCH ══ -->
+  <div class="screen" id="screen-search">
+    <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+    <div class="app-bar">
+      <button class="back-btn" style="display:block" onclick="goBack()">←</button>
+      <h2>Buscar Linha</h2>
+    </div>
+    <div class="screen-body">
+      <div class="search-input-real">
+        <span>🔍</span>
+        <input type="text" id="search-input" placeholder="Nome ou número da linha…" oninput="filterLines(this.value)">
+        <span class="clear" onclick="clearSearch()">✕</span>
+      </div>
+
+      <div id="search-results">
+        <div class="empty-search">
+          <span>🚌</span>
+          Digite para buscar uma linha
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('home',false)"><span class="nav-icon">🏠</span>Home</div>
+      <div class="nav-item active"><span class="nav-icon">🔍</span>Busca</div>
+      <div class="nav-item" onclick="goTo('favorites',false)"><span class="nav-icon">⭐</span>Favoritos</div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: SCHEDULE ══ -->
+  <div class="screen" id="screen-schedule">
+    <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+    <div class="app-bar">
+      <button class="back-btn" style="display:block" onclick="goBack()">←</button>
+      <h2 id="sched-title">Horários – L.101</h2>
+      <button class="fav-btn" id="fav-btn-sched" onclick="toggleFavFromSched()">☆</button>
+    </div>
+    <div class="screen-body">
+      <div class="next-badge">
+        <div class="nb-label">⏰ Próximo horário</div>
+        <div class="nb-time" id="next-time">14:35</div>
+        <div class="nb-min" id="next-min">em aproximadamente 8 minutos</div>
+      </div>
+
+      <div class="day-tabs">
+        <div class="day-tab active" onclick="switchDay('util', this)">Dia Útil</div>
+        <div class="day-tab" onclick="switchDay('sab', this)">Sábado</div>
+        <div class="day-tab" onclick="switchDay('dom', this)">Dom/Fer.</div>
+      </div>
+
+      <div class="time-grid" id="time-grid"></div>
+
+      <button onclick="goTo('itinerary',true)" style="
+        width:100%; padding:12px; background:#2E6DA4; color:#fff;
+        border:none; border-radius:12px; font-size:14px; font-weight:700;
+        cursor:pointer; margin-top:6px; letter-spacing:.3px;">
+        📍 Ver Itinerário Completo
+      </button>
+
+      <div class="update-note">✓ Horário de <strong id="day-label">dia útil</strong> · Atualizado em 20/03/2026</div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('home',false)"><span class="nav-icon">🏠</span>Home</div>
+      <div class="nav-item" onclick="goTo('search',true)"><span class="nav-icon">🔍</span>Busca</div>
+      <div class="nav-item" onclick="goTo('favorites',false)"><span class="nav-icon">⭐</span>Favoritos</div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: ITINERARY ══ -->
+  <div class="screen" id="screen-itinerary">
+    <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+    <div class="app-bar">
+      <button class="back-btn" style="display:block" onclick="goBack()">←</button>
+      <h2 id="itin-title">Itinerário – L.101</h2>
+    </div>
+    <div class="screen-body">
+      <div class="direction-badge" id="dir-badge" onclick="flipDirection()">
+        🔄 Sentido: Terminal → Centro
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-bottom:12px;">Toque no botão para inverter o sentido.</p>
+      <div class="stop-list" id="stop-list"></div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('home',false)"><span class="nav-icon">🏠</span>Home</div>
+      <div class="nav-item" onclick="goTo('search',true)"><span class="nav-icon">🔍</span>Busca</div>
+      <div class="nav-item" onclick="goTo('favorites',false)"><span class="nav-icon">⭐</span>Favoritos</div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: FAVORITES ══ -->
+  <div class="screen" id="screen-favorites">
+    <div class="status-bar"><span>09:41</span><span>📶 🔋</span></div>
+    <div class="app-bar">
+      <h2>⭐ Favoritos</h2>
+    </div>
+    <div class="screen-body">
+      <div id="fav-list"></div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="goTo('home',false)"><span class="nav-icon">🏠</span>Home</div>
+      <div class="nav-item" onclick="goTo('search',true)"><span class="nav-icon">🔍</span>Busca</div>
+      <div class="nav-item active"><span class="nav-icon">⭐</span>Favoritos</div>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+</div><!-- /phone-wrap -->
+
+<div class="proto-info">
+  Protótipo navegável · UX-Atividade-Aula05 · HallwayTech<br>
+  FATEC Jacareí · 2DSM · Prof.ª Lucineide · 2026/1
+</div>
+
+<script>
+// ── Data ─────────────────────────────────────────────────
+const ALL_LINES = [
+  { num:'101', name:'Centro', sub:'Terminal Jacareí → Centro' },
+  { num:'101A', name:'Centro Expresso', sub:'Terminal → Centro (sem paradas intermediárias)' },
+  { num:'203', name:'Terminal Sul', sub:'Bairro Industrial → Terminal Sul' },
+  { num:'055', name:'Jardim das Nações', sub:'Centro → Jardim das Nações' },
+  { num:'312', name:'Vila Nova', sub:'Terminal → Vila Nova → Centro' },
+  { num:'408', name:'Mirante', sub:'Centro → Bairro Mirante' },
+  { num:'520', name:'FATEC / Univap', sub:'Centro → FATEC Jacareí → Univap' },
+];
+
+const SCHEDULES = {
+  util: ['05:30','06:00','06:30','07:00','07:30','08:00','08:35','09:10',
+         '09:45','10:20','11:00','11:40','12:20','13:00','13:40','14:20',
+         '14:35','15:05','15:35','16:05','16:35','17:05','17:35','18:10',
+         '18:45','19:20','20:00','20:45','21:30','22:15'],
+  sab:  ['06:00','06:45','07:30','08:15','09:00','09:45','10:30','11:15',
+         '12:00','12:45','13:30','14:15','15:00','15:45','16:30','17:15',
+         '18:00','18:45','19:30','20:15','21:00','21:45'],
+  dom:  ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00',
+         '15:00','16:00','17:00','18:00','19:00','20:00','21:00'],
+};
+
+const STOPS_IDA = [
+  'Terminal Jacareí (partida)',
+  'R. das Palmeiras',
+  'Praça da Bandeira',
+  'Hospital Municipal',
+  'Shopping Jacareí',
+  'R. 7 de Setembro',
+  'Praça da Matriz',
+  'Correios / Banco do Brasil',
+  'Terminal Centro (chegada)',
+];
+const STOPS_VOLTA = [...STOPS_IDA].reverse();
+
+let favorites = {};
+let currentLine = { num:'101', name:'Centro', sub:'Terminal Jacareí → Centro' };
+let currentDay  = 'util';
+let dirForward  = true;
+let history_stack = [];
+
+// ── Navigation ────────────────────────────────────────────
+function goTo(screenId, pushHistory) {
+  const current = document.querySelector('.screen.active');
+  const next    = document.getElementById('screen-' + screenId);
+  if (!next || next === current) return;
+
+  if (pushHistory && current) history_stack.push(current.id.replace('screen-',''));
+
+  current.classList.remove('active');
+  next.classList.add('active');
+  next.classList.add(pushHistory ? 'slide-in' : 'slide-back');
+  setTimeout(() => next.classList.remove('slide-in','slide-back'), 300);
+
+  // update breadcrumb
+  document.querySelectorAll('.bc-btn').forEach((b,i) => {
+    const ids = ['home','search','schedule','itinerary','favorites'];
+    b.classList.toggle('active', ids[i] === screenId);
+  });
+
+  if (screenId === 'schedule') renderSchedule();
+  if (screenId === 'itinerary') renderItinerary();
+  if (screenId === 'favorites') renderFavorites();
+  if (screenId === 'home') renderHomeFavs();
+}
+
+function goBack() {
+  if (history_stack.length === 0) { goTo('home', false); return; }
+  const prev = history_stack.pop();
+  const current = document.querySelector('.screen.active');
+  const target  = document.getElementById('screen-' + prev);
+  current.classList.remove('active');
+  target.classList.add('active');
+  target.classList.add('slide-back');
+  setTimeout(() => target.classList.remove('slide-back'), 280);
+  document.querySelectorAll('.bc-btn').forEach((b,i) => {
+    const ids = ['home','search','schedule','itinerary','favorites'];
+    b.classList.toggle('active', ids[i] === prev);
+  });
+}
+
+// ── Line selection ────────────────────────────────────────
+function selectLine(num, name, sub) {
+  currentLine = { num, name, sub };
+  history_stack.push(document.querySelector('.screen.active').id.replace('screen-',''));
+  goTo('schedule', true);
+}
+
+// ── Schedule ──────────────────────────────────────────────
+function renderSchedule() {
+  document.getElementById('sched-title').textContent = `Horários – L.${currentLine.num}`;
+
+  // next time
+  const now   = new Date();
+  const times = SCHEDULES[currentDay];
+  let nextT   = null, minDiff = Infinity;
+  times.forEach(t => {
+    const [h,m] = t.split(':').map(Number);
+    const diff  = (h*60+m) - (now.getHours()*60+now.getMinutes());
+    if (diff > 0 && diff < minDiff) { minDiff = diff; nextT = t; }
+  });
+  document.getElementById('next-time').textContent = nextT || times[0];
+  document.getElementById('next-min').textContent  =
+    nextT ? `em aproximadamente ${minDiff} minuto${minDiff!==1?'s':''}` : 'Horário do dia';
+
+  // fav star
+  document.getElementById('fav-btn-sched').textContent =
+    favorites[currentLine.num] ? '★' : '☆';
+
+  renderTimeGrid();
+}
+
+function renderTimeGrid() {
+  const now   = new Date();
+  const times = SCHEDULES[currentDay];
+  let nextIdx = -1, minDiff = Infinity;
+  times.forEach((t,i) => {
+    const [h,m] = t.split(':').map(Number);
+    const diff  = (h*60+m) - (now.getHours()*60+now.getMinutes());
+    if (diff > 0 && diff < minDiff) { minDiff = diff; nextIdx = i; }
+  });
+
+  const grid = document.getElementById('time-grid');
+  grid.innerHTML = times.map((t,i) =>
+    `<div class="time-chip${i===nextIdx?' next-chip':''}">${t}</div>`
+  ).join('');
+}
+
+function switchDay(day, el) {
+  currentDay = day;
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const labels = { util:'dia útil', sab:'sábado', dom:'domingo/feriado' };
+  document.getElementById('day-label').textContent = labels[day];
+  renderSchedule();
+}
+
+// ── Itinerary ─────────────────────────────────────────────
+function renderItinerary() {
+  document.getElementById('itin-title').textContent = `Itinerário – L.${currentLine.num}`;
+  const stops = dirForward ? STOPS_IDA : STOPS_VOLTA;
+  document.getElementById('dir-badge').textContent =
+    dirForward ? '🔄 Sentido: Terminal → Centro' : '🔄 Sentido: Centro → Terminal';
+
+  const list = document.getElementById('stop-list');
+  list.innerHTML = stops.map((s,i) => {
+    const isTerminal = i === 0 || i === stops.length-1;
+    const hasLine    = i < stops.length - 1;
+    return `
+      <div class="stop-row">
+        ${hasLine ? '<div class="stop-line-v"></div>' : ''}
+        <div class="stop-dot${isTerminal?' terminal':''}"></div>
+        <div class="stop-name${isTerminal?' terminal':''}">${s}</div>
+      </div>`;
+  }).join('');
+}
+
+function flipDirection() {
+  dirForward = !dirForward;
+  renderItinerary();
+}
+
+// ── Favorites ─────────────────────────────────────────────
+function toggleFav(e, num, name, sub) {
+  e.stopPropagation();
+  if (favorites[num]) {
+    delete favorites[num];
+    e.target.textContent = '☆';
+  } else {
+    favorites[num] = { num, name, sub };
+    e.target.textContent = '★';
+    // small bounce
+    e.target.style.transform = 'scale(1.4)';
+    setTimeout(() => e.target.style.transform = '', 200);
+  }
+  renderHomeFavs();
+}
+
+function toggleFavFromSched() {
+  const { num, name, sub } = currentLine;
+  if (favorites[num]) {
+    delete favorites[num];
+    document.getElementById('fav-btn-sched').textContent = '☆';
+  } else {
+    favorites[num] = { num, name, sub };
+    document.getElementById('fav-btn-sched').textContent = '★';
+  }
+  renderHomeFavs();
+}
+
+function renderFavorites() {
+  const list = document.getElementById('fav-list');
+  const keys = Object.keys(favorites);
+  if (keys.length === 0) {
+    list.innerHTML = `<div class="fav-empty">
+      <span>⭐</span>
+      Nenhuma linha favoritada ainda.<br>
+      Toque em ☆ em qualquer linha para salvar aqui.
+    </div>`;
+    return;
+  }
+  list.innerHTML = keys.map(k => {
+    const l = favorites[k];
+    return `<div class="line-card" onclick="selectLine('${l.num}','${l.name}','${l.sub}')">
+      <div class="line-num">${l.num}</div>
+      <div class="line-info">
+        <div class="line-name">${l.name}</div>
+        <div class="line-sub">${l.sub}</div>
+      </div>
+      <span class="fav-star" onclick="removeFavFromList(event,'${l.num}')">★</span>
+    </div>`;
+  }).join('');
+}
+
+function removeFavFromList(e, num) {
+  e.stopPropagation();
+  delete favorites[num];
+  renderFavorites();
+  renderHomeFavs();
+}
+
+function renderHomeFavs() {
+  const el   = document.getElementById('home-favs');
+  const keys = Object.keys(favorites);
+  if (keys.length === 0) {
+    el.innerHTML = `<div style="color:#ccc;font-size:12px;padding:8px 0 4px;">
+      Nenhum favorito ainda. Toque em ☆ para salvar.</div>`;
+    return;
+  }
+  el.innerHTML = keys.map(k => {
+    const l = favorites[k];
+    return `<div class="line-card" onclick="selectLine('${l.num}','${l.name}','${l.sub}')">
+      <div class="line-num">${l.num}</div>
+      <div class="line-info">
+        <div class="line-name">${l.name}</div>
+        <div class="line-sub">${l.sub}</div>
+      </div>
+      <span class="fav-star">★</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Search ────────────────────────────────────────────────
+function filterLines(q) {
+  const res = document.getElementById('search-results');
+  if (!q.trim()) {
+    res.innerHTML = `<div class="empty-search"><span>🚌</span>Digite para buscar uma linha</div>`;
+    return;
+  }
+  const ql = q.toLowerCase();
+  const found = ALL_LINES.filter(l =>
+    l.num.toLowerCase().includes(ql) ||
+    l.name.toLowerCase().includes(ql) ||
+    l.sub.toLowerCase().includes(ql)
+  );
+  if (found.length === 0) {
+    res.innerHTML = `<div class="empty-search"><span>🔍</span>Nenhuma linha encontrada</div>`;
+    return;
+  }
+  res.innerHTML = found.map(l => `
+    <div class="result-card" onclick="selectLine('${l.num}','${l.name}','${l.sub}')">
+      <div class="line-num">${l.num}</div>
+      <div class="line-info">
+        <div class="line-name">${l.name}</div>
+        <div class="line-sub">${l.sub}</div>
+      </div>
+    </div>`).join('');
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  filterLines('');
+}
+
+// ── Init ──────────────────────────────────────────────────
+renderHomeFavs();
+</script>
+</body>
+</html>
